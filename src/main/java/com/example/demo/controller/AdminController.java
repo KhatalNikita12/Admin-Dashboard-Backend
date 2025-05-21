@@ -7,6 +7,7 @@ import com.example.demo.dto.AdminLoginResponse;
 
 import com.example.demo.service.AdminService;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 
@@ -34,6 +35,11 @@ public ResponseEntity<AdminLoginResponse> loginAdmin(@RequestBody AdminLoginRequ
     return ResponseEntity.ok(adminService.loginAdmin(request));
 }
 
+@PostMapping("/adminlogout")
+public ResponseEntity<String> logout(HttpSession session) {
+    session.invalidate();
+    return ResponseEntity.ok("Logout successful.");
+}
 
 @GetMapping("/test")
     public ResponseEntity<String> testProtected() {

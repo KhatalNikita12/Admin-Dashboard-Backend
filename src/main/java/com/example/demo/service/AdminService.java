@@ -54,4 +54,5 @@ public class AdminService {
         String token = jwtUtil.generateToken(admin.getUsername());
         return new AdminLoginResponse(token, "Login successful");
     }
+    
 }

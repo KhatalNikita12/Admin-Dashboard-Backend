@@ -6,12 +6,12 @@ import com.example.demo.dto.TpoRegisterRequest;
 import com.example.demo.entity.Tpo;
 import com.example.demo.repository.TpoRepository;
 import com.example.demo.util.JwtUtil;
-
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,66 +20,76 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class TpoService {
-
-    private final TpoRepository tpoRepository;
+    @Autowired
+    private final TpoRepository repo;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-
-    public String registerTpo(TpoRegisterRequest request) {
-        if (tpoRepository.findByCollegeEmail(request.getCollegeEmail()).isPresent()) {
-            return "Email already registered";
+    public void registerTpo(TpoRegisterRequest req) {
+        if (repo.findByCollegeEmail(req.getCollegeEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already registered");
         }
-
-        Tpo tpo = Tpo.builder()
-                .name(request.getName())
-                .idNumber(request.getIdNumber())
-                .designation(request.getDesignation())
-                .campus(request.getCampus())
-                .phone(request.getPhone())
-                .collegeEmail(request.getCollegeEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .isApproved(false) // default not approved
+        Tpo t = Tpo.builder()
+                .name(req.getName())
+                .idNumber(req.getIdNumber())
+                .designation(req.getDesignation())
+                .campus(req.getCampus())
+                .phone(req.getPhone())
+                .collegeEmail(req.getCollegeEmail())
+                .password(passwordEncoder.encode(req.getPassword()))
+                .status("pending")
                 .build();
-
-        tpoRepository.save(tpo);
-        return "TPO registration successful. Waiting for admin approval.";
+        repo.save(t);
     }
 
-    public TpoLoginResponse loginTpo(TpoLoginRequest request) {
-    Optional<Tpo> optionalTpo = tpoRepository.findByCollegeEmail(request.getCollegeEmail());
-
-    if (optionalTpo.isEmpty()) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    public TpoLoginResponse loginTpo(TpoLoginRequest req) {
+        Tpo t = repo.findByCollegeEmail(req.getCollegeEmail())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+        if (!"approved".equalsIgnoreCase(t.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account not approved by admin");
+        }
+        if (!passwordEncoder.matches(req.getPassword(), t.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+        String token = jwtUtil.generateToken(t.getCollegeEmail());
+        return new TpoLoginResponse(token, "Login successful");
     }
 
-    Tpo tpo = optionalTpo.get();
-
-    if (!tpo.isApproved()) {
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account not approved by admin");
+    public void updateApprovalStatus(Long id, boolean approved) {
+        Tpo t = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "TPO not found"));
+        t.setStatus(approved ? "approved" : "rejected");
+        repo.save(t);
     }
 
-    if (!passwordEncoder.matches(request.getPassword(), tpo.getPassword())) {
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    public Page<Tpo> getAllTpos(int page, int size) {
+        Pageable pg = PageRequest.of(page, size, Sort.by("id").ascending());
+        return repo.findAll(pg);
     }
 
-    String token = jwtUtil.generateToken(tpo.getCollegeEmail());
+    public void updateTpoDetails(Long id, String name, String campus) {
+        Tpo t = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "TPO not found"));
+        t.setName(name);
+        t.setCampus(campus);
+        repo.save(t);
+    }
 
-    return new TpoLoginResponse(token, "Login successful");
+    public void deleteTpo(Long id) {
+        if (!repo.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "TPO not found");
+        }
+        repo.deleteById(id);
+    }
+    public List<Tpo> getTposByStatus(String status) {
+    return repo.findByStatus(status);
+}
+public long countAll() {
+    return repo.count();
 }
 
-public boolean updateApprovalStatus(Long tpoId, boolean approved) {
-    Optional<Tpo> optionalTpo = tpoRepository.findById(tpoId);
-    if(optionalTpo.isPresent()) {
-        Tpo tpo = optionalTpo.get();
-        tpo.setApproved(approved); // or tpo.setStatus(approved ? "approved" : "rejected");
-        tpoRepository.save(tpo);
-        return true;
-    }
-    return false;
-}
-public List<Tpo> getAllTpos() {
-    return tpoRepository.findAll();
+public long countByStatus(String status) {
+    return repo.countByStatus(status);
 }
 
 }

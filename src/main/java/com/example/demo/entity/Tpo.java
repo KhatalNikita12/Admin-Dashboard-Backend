@@ -24,6 +24,7 @@ public class Tpo {
     private String collegeEmail;
 
     private String password;
-
-    private boolean isApproved=false;
+    
+  @Column(nullable = false)
+  private String status = "pending";
 }
