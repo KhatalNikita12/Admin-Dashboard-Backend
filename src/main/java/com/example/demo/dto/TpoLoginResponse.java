@@ -10,4 +10,5 @@ import lombok.Data;
 public class TpoLoginResponse {
     private String token;
     private String message;
+    private String status;
 }

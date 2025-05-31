@@ -17,7 +17,10 @@ public class Tpo {
     private String name;
     private String idNumber;
     private String designation;
-    private String campus;
+    
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "campus_id")
+  private Campus campus;
     private String phone;
 
     @Column(unique = true)

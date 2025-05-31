@@ -7,9 +7,8 @@ public class TpoRegisterRequest {
     private String name;
     private String idNumber;
     private String designation;
-    private String campus;
+    private Integer campusId;
     private String phone;
     private String collegeEmail;
     private String password;
 }
-

@@ -36,7 +36,9 @@ public class SecurityConfig {
                 "/api/auth/admin/adminlogin",
                 "/api/settings/**",
                 
-            "/api/dashboard/**" 
+            "/api/dashboard/**" ,
+            "/api/admin/campus/**" ,
+            "/api/stream/**" 
             ).permitAll()
             .anyRequest().authenticated()
           .and()

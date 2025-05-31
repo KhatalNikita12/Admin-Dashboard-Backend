@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class SystemSettingsService {
+
     private final SystemSettingsRepository repo;
 
     /**
@@ -27,5 +28,21 @@ public class SystemSettingsService {
         existing.setAllowRegistrations(updated.isAllowRegistrations());
         existing.setFreezeEdits(updated.isFreezeEdits());
         return repo.save(existing);
+    }
+
+    /**
+     * Returns true if user registrations are allowed.
+     */
+    @Transactional(readOnly = true)
+    public boolean canRegisterUsers() {
+        return getSettings().isAllowRegistrations();
+    }
+
+    /**
+     * Returns true if edits are frozen.
+     */
+    @Transactional(readOnly = true)
+    public boolean isFreezeEditsEnabled() {
+        return getSettings().isFreezeEdits();
     }
 }

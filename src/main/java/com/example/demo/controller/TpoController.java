@@ -27,17 +27,17 @@ public class TpoController {
     private final TpoService tpoService;
     private final SystemSettingsService settingsService;
    
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody TpoRegisterRequest req) {
-        SystemSettings settings = settingsService.getSettings();
-        if (!settings.isAllowRegistrations()) {
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body("Registrations are currently closed");
-        }
-        tpoService.registerTpo(req);
-        return ResponseEntity.ok("Registration successful. Awaiting approval.");
+ @PostMapping("/register")
+public ResponseEntity<?> register(@RequestBody TpoRegisterRequest req) {
+    SystemSettings settings = settingsService.getSettings();
+    System.out.println("ALLOW REG: " + settings.isAllowRegistrations()); // ← Add this
+    if (!settings.isAllowRegistrations()) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Registrations are currently closed");
     }
+    tpoService.registerTpo(req);
+    return ResponseEntity.ok("Registration successful. Awaiting approval.");
+}
+
 
     @PostMapping("/login")
     public ResponseEntity<TpoLoginResponse> login(@RequestBody TpoLoginRequest req) {
@@ -70,13 +70,14 @@ public ResponseEntity<String> logout(HttpSession session) {
 
     /** 2) Partial update of name & campus */
     @PatchMapping("/{id}")
-    public ResponseEntity<String> updateDetails(
-            @PathVariable Long id,
-            @RequestBody UpdateDto body
-    ) {
-        tpoService.updateTpoDetails(id, body.getName(), body.getCampus());
-        return ResponseEntity.ok("Details updated");
-    }
+public ResponseEntity<String> updateDetails(
+        @PathVariable Long id,
+        @RequestBody UpdateDto body
+) {
+    tpoService.updateTpoDetails(id, body.getName(), body.getCampusId());
+    return ResponseEntity.ok("Details updated");
+}
+
 
     /** 3) Delete */
     @DeleteMapping("/{id}")
@@ -95,13 +96,15 @@ public ResponseEntity<String> logout(HttpSession session) {
         return ResponseEntity.ok(pendingTpos);
     }
     // DTO for PATCH
-    public static class UpdateDto {
-        private String name;
-        private String campus;
-        // getters & setters
-        public String getName() { return name; }
-        public void setName(String n) { name = n; }
-        public String getCampus() { return campus; }
-        public void setCampus(String c) { campus = c; }
-    }
+   public static class UpdateDto {
+    private String name;
+    private Long campusId; // ✅ Correct: use ID to look up the campus
+
+    public String getName() { return name; }
+    public void setName(String n) { name = n; }
+
+    public Long getCampusId() { return campusId; }
+    public void setCampusId(Long id) { campusId = id; }
+}
+
 }
